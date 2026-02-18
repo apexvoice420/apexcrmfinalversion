@@ -1,21 +1,54 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Sidebar from '@/components/sidebar';
 import DashboardStats from '@/components/dashboard-stats';
 import CallsChart from '@/components/calls-chart';
 import RecentActivity from '@/components/recent-activity';
+import { API_URL } from '@/lib/config';
 
-// Demo stats - no backend needed
-const demoStats = {
-  totalCalls: 47,
-  totalLeads: 23,
-  newLeads: 8,
-  bookedCalls: 12,
-  conversionRate: '25.5',
-};
+interface Stats {
+  totalCalls: number;
+  totalLeads: number;
+  newLeads: number;
+  bookedCalls: number;
+  conversionRate: string;
+}
 
 export default function Dashboard() {
-  // Mock recent calls for demo
+  const [stats, setStats] = useState<Stats>({
+    totalCalls: 0,
+    totalLeads: 0,
+    newLeads: 0,
+    bookedCalls: 0,
+    conversionRate: '0',
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      const res = await fetch(`${API_URL}/api/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const recentCalls = [
     { id: '1', customerName: 'John Peterson', issue: 'Roof Leak', time: '2 mins ago', urgency: 'High' as const, status: 'completed' },
     { id: '2', customerName: 'Sarah Miller', issue: 'Drain Clog', time: '1 hour ago', urgency: 'Normal' as const, status: 'completed' },
@@ -27,7 +60,6 @@ export default function Dashboard() {
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
       <main className="ml-64 p-8">
-        {/* Header */}
         <div className="flex justify-between items-end mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Welcome back, Maurice</h1>
@@ -40,18 +72,23 @@ export default function Dashboard() {
           </select>
         </div>
 
-        {/* Stats Grid */}
-        <div className="mb-8">
-          <DashboardStats stats={demoStats} />
-        </div>
+        {loading ? (
+          <div className="animate-pulse grid grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 h-36"></div>
+            ))}
+          </div>
+        ) : (
+          <div className="mb-8">
+            <DashboardStats stats={stats} />
+          </div>
+        )}
 
-        {/* Charts Grid */}
         <div className="grid lg:grid-cols-2 gap-8">
           <CallsChart />
           <RecentActivity calls={recentCalls} />
         </div>
 
-        {/* Quick Actions */}
         <div className="mt-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
           <div className="flex justify-between items-center">
             <div>
