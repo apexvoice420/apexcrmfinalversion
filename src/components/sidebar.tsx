@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   LayoutDashboard, 
   Users, 
@@ -27,6 +27,14 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+    router.push('/login');
+  };
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-[#0f172a] text-white flex flex-col">
@@ -75,7 +83,11 @@ export default function Sidebar() {
             <div className="font-medium text-sm">Maurice</div>
             <div className="text-xs text-gray-400">Admin</div>
           </div>
-          <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+          <button 
+            onClick={handleLogout}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            title="Logout"
+          >
             <LogOut size={18} />
           </button>
         </div>

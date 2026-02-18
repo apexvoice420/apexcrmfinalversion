@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-// Local auth - no backend needed for now
+// Local auth - no backend needed
 const ADMIN_EMAIL = 'apexvoicesolutions@gmail.com';
 const ADMIN_PASSWORD = 'Mommy@420!';
 
@@ -21,24 +21,18 @@ export default function LoginPage() {
 
     // Simple local auth check
     if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-      // Create a mock token
       const mockToken = 'local_auth_' + Date.now();
       const mockUser = {
         id: 'local-user-1',
         email: ADMIN_EMAIL,
         name: 'Maurice',
         tenantId: 'local-tenant-1',
-        tenant: { id: 'local-tenant-1', name: 'Apex Voice Solutions' }
       };
 
-      // Store in localStorage
       localStorage.setItem('auth_token', mockToken);
       localStorage.setItem('user', JSON.stringify(mockUser));
-
-      // Set cookie for middleware
       document.cookie = `auth_token=${mockToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
 
-      // Redirect to dashboard
       router.push('/');
       router.refresh();
     } else {
