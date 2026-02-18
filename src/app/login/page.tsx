@@ -3,6 +3,10 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+// Local auth - no backend needed for now
+const ADMIN_EMAIL = 'apexvoicesolutions@gmail.com';
+const ADMIN_PASSWORD = 'Mommy@420!';
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,34 +19,33 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+    // Simple local auth check
+    if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
+      // Create a mock token
+      const mockToken = 'local_auth_' + Date.now();
+      const mockUser = {
+        id: 'local-user-1',
+        email: ADMIN_EMAIL,
+        name: 'Maurice',
+        tenantId: 'local-tenant-1',
+        tenant: { id: 'local-tenant-1', name: 'Apex Voice Solutions' }
+      };
 
-      const data = await res.json();
+      // Store in localStorage
+      localStorage.setItem('auth_token', mockToken);
+      localStorage.setItem('user', JSON.stringify(mockUser));
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Login failed');
-      }
-
-      // Store in localStorage for client-side access
-      localStorage.setItem('auth_token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-
-      // Set cookie for middleware auth (expires in 7 days)
-      document.cookie = `auth_token=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
+      // Set cookie for middleware
+      document.cookie = `auth_token=${mockToken}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
 
       // Redirect to dashboard
       router.push('/');
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || 'Invalid credentials');
-    } finally {
-      setLoading(false);
+    } else {
+      setError('Invalid email or password');
     }
+
+    setLoading(false);
   };
 
   return (
