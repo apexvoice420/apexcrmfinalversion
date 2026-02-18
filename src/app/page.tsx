@@ -1,57 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Sidebar from '@/components/sidebar';
 import DashboardStats from '@/components/dashboard-stats';
 import CallsChart from '@/components/calls-chart';
 import RecentActivity from '@/components/recent-activity';
-import { API_URL } from '@/lib/config';
 
-interface Stats {
-  totalCalls: number;
-  totalLeads: number;
-  newLeads: number;
-  bookedCalls: number;
-  conversionRate: string;
-}
+// Demo stats - no backend needed
+const demoStats = {
+  totalCalls: 47,
+  totalLeads: 23,
+  newLeads: 8,
+  bookedCalls: 12,
+  conversionRate: '25.5',
+};
 
 export default function Dashboard() {
-  const [stats, setStats] = useState<Stats>({
-    totalCalls: 0,
-    totalLeads: 0,
-    newLeads: 0,
-    bookedCalls: 0,
-    conversionRate: '0',
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      const token = localStorage.getItem('auth_token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      const res = await fetch(`${API_URL}/api/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setStats(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Mock recent calls for demo
   const recentCalls = [
     { id: '1', customerName: 'John Peterson', issue: 'Roof Leak', time: '2 mins ago', urgency: 'High' as const, status: 'completed' },
@@ -78,17 +41,9 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Grid */}
-        {loading ? (
-          <div className="animate-pulse grid grid-cols-4 gap-6 mb-8">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100 h-36"></div>
-            ))}
-          </div>
-        ) : (
-          <div className="mb-8">
-            <DashboardStats stats={stats} />
-          </div>
-        )}
+        <div className="mb-8">
+          <DashboardStats stats={demoStats} />
+        </div>
 
         {/* Charts Grid */}
         <div className="grid lg:grid-cols-2 gap-8">
