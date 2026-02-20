@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/sidebar';
 import DashboardStats from '@/components/dashboard-stats';
 import CallsChart from '@/components/calls-chart';
@@ -16,6 +17,7 @@ interface Stats {
 }
 
 export default function Dashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState<Stats>({
     totalCalls: 0,
     totalLeads: 0,
@@ -95,7 +97,10 @@ export default function Dashboard() {
               <h3 className="text-xl font-bold">Ready to add a new client?</h3>
               <p className="text-blue-100 mt-1">Set up their AI receptionist in minutes.</p>
             </div>
-            <button className="bg-white text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors">
+            <button 
+              onClick={() => router.push('/clients/new')}
+              className="bg-white text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors"
+            >
               + Add Client
             </button>
           </div>

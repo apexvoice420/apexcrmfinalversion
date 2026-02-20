@@ -11,11 +11,13 @@ import {
   Calendar,
   BarChart3,
   LogOut,
-  MessageSquare
+  MessageSquare,
+  Building
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Clients', href: '/clients', icon: Building },
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Calls', href: '/calls', icon: Phone },
   { name: 'Agents', href: '/agents', icon: Bot },
