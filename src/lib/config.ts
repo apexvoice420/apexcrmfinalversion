@@ -1,5 +1,5 @@
 // API Configuration for Apex Voice CRM
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api-production-74dd.up.railway.app';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://apex-voice-crm-production.up.railway.app';
 
 // VAPI Configuration
 export const VAPI_CONFIG = {
