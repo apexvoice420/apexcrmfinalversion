@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/sidebar';
 import { 
-  Building, User, Phone, Mail, MapPin, Industry, 
+  Building, User, Phone, Mail, MapPin, Briefcase, 
   Calendar, MessageSquare, Mic, Loader2, ArrowLeft,
   CheckCircle, AlertCircle
 } from 'lucide-react';
@@ -118,7 +118,7 @@ export default function NewClientPage() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Industry *
+                Briefcase *
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {INDUSTRIES.map((ind) => (
@@ -331,7 +331,7 @@ export default function NewClientPage() {
                 </h4>
                 <div className="space-y-2 text-sm">
                   <p><span className="text-gray-500">Name:</span> <span className="font-medium">{formData.businessName || 'Not set'}</span></p>
-                  <p><span className="text-gray-500">Industry:</span> <span className="font-medium capitalize">{formData.industry}</span></p>
+                  <p><span className="text-gray-500">Briefcase:</span> <span className="font-medium capitalize">{formData.industry}</span></p>
                   <p><span className="text-gray-500">Location:</span> <span className="font-medium">{formData.city}, {formData.state}</span></p>
                 </div>
               </div>
