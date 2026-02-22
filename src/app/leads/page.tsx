@@ -211,7 +211,7 @@ export default function LeadsPage() {
                       <td className="px-6 py-4">
                         {lead.rating ? (
                           <span className="flex items-center gap-1">
-                            ⭐ {lead.rating.toFixed(1)}
+                            ⭐ {parseFloat(String(lead.rating)).toFixed(1)}
                           </span>
                         ) : (
                           <span className="text-gray-300">—</span>
