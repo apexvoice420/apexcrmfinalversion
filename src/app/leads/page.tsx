@@ -2,16 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/sidebar';
-import { Search, Plus, Phone, Mail, MoreVertical, Download, Loader2, MapPin, Wrench } from 'lucide-react';
+import { Search, Plus, Phone, Mail, MoreVertical, Download, Loader2, MapPin, Wrench, Star, ExternalLink } from 'lucide-react';
 import { API_URL } from '@/lib/config';
+import Link from 'next/link';
 
 interface Lead {
   id: number;
   business_name: string;
   phone: string;
+  email?: string;
   city?: string;
   state?: string;
   rating?: number;
+  reviews?: number;
+  website?: string;
   status: string;
   source?: string;
   created_at: string;
@@ -187,6 +191,7 @@ export default function LeadsPage() {
                   <tr>
                     <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Business</th>
                     <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Phone</th>
+                    <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Email</th>
                     <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Location</th>
                     <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Rating</th>
                     <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
@@ -195,23 +200,45 @@ export default function LeadsPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {filteredLeads.map((lead) => (
-                    <tr key={lead.id} className="hover:bg-gray-50 transition-colors">
+                    <tr key={lead.id} className="hover:bg-gray-50 transition-colors cursor-pointer">
                       <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900">{lead.business_name}</div>
+                        <Link href={`/leads/${lead.id}`} className="block">
+                          <div className="font-medium text-gray-900 hover:text-blue-600">{lead.business_name}</div>
+                          {lead.website && (
+                            <div className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                              <ExternalLink size={10} />
+                              {new URL(lead.website).hostname}
+                            </div>
+                          )}
+                        </Link>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <a href={`tel:${lead.phone}`} className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600">
                           <Phone size={14} />
                           {lead.phone}
-                        </div>
+                        </a>
+                      </td>
+                      <td className="px-6 py-4">
+                        {lead.email ? (
+                          <a href={`mailto:${lead.email}`} className="flex items-center gap-2 text-sm text-blue-600 hover:underline">
+                            <Mail size={14} />
+                            <span className="truncate max-w-[150px]">{lead.email}</span>
+                          </a>
+                        ) : (
+                          <span className="text-sm text-gray-300">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500">
-                        {lead.city}, {lead.state}
+                        {lead.city}{lead.state ? `, ${lead.state}` : ''}
                       </td>
                       <td className="px-6 py-4">
                         {lead.rating ? (
-                          <span className="flex items-center gap-1">
-                            ⭐ {parseFloat(String(lead.rating)).toFixed(1)}
+                          <span className="flex items-center gap-1 text-sm">
+                            <Star size={14} className="fill-yellow-400 text-yellow-400" />
+                            {typeof lead.rating === 'string' ? parseFloat(lead.rating).toFixed(1) : lead.rating.toFixed(1)}
+                            {lead.reviews && (
+                              <span className="text-xs text-gray-400">({lead.reviews})</span>
+                            )}
                           </span>
                         ) : (
                           <span className="text-gray-300">—</span>
@@ -225,9 +252,9 @@ export default function LeadsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <button className="p-2 hover:bg-gray-100 rounded-lg">
-                          <MoreVertical size={18} className="text-gray-400" />
-                        </button>
+                        <Link href={`/leads/${lead.id}`} className="p-2 hover:bg-gray-100 rounded-lg inline-block text-sm text-blue-600">
+                          View
+                        </Link>
                       </td>
                     </tr>
                   ))}
