@@ -8,9 +8,15 @@ import { API_URL } from '@/lib/config';
 interface VAPIAgent {
   id: string;
   name: string;
-  voice: string;
-  voiceProvider: string;
-  model: string;
+  voice: {
+    voiceId: string;
+    provider: string;
+    model?: string;
+  };
+  model: {
+    model: string;
+    provider: string;
+  };
   firstMessage: string;
   status: string;
   createdAt: string;
@@ -141,7 +147,7 @@ export default function AgentsPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                      <span className="text-sm font-medium text-gray-500 capitalize">{agent.status}</span>
+                      <span className="text-sm font-medium text-gray-500">Active</span>
                     </div>
                   </div>
                 </div>
@@ -152,15 +158,15 @@ export default function AgentsPage() {
                     <div className="text-xs text-gray-500 uppercase font-semibold">Voice</div>
                     <div className="font-semibold text-gray-900 mt-1 flex items-center gap-2">
                       <Mic size={14} />
-                      {agent.voice}
+                      {agent.voice?.voiceId || 'Default'}
                     </div>
-                    <div className="text-xs text-gray-400 mt-0.5">{agent.voiceProvider}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{agent.voice?.provider || '11labs'}</div>
                   </div>
                   <div>
                     <div className="text-xs text-gray-500 uppercase font-semibold">Model</div>
                     <div className="font-semibold text-gray-900 mt-1 flex items-center gap-2">
                       <Cpu size={14} />
-                      {agent.model}
+                      {agent.model?.model || 'gpt-4o'}
                     </div>
                   </div>
                   <div className="col-span-2">
