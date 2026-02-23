@@ -14,7 +14,7 @@ interface Lead {
   email?: string;
   city?: string;
   state?: string;
-  rating?: number | string;
+  rating?: number;
   reviews?: number;
   website?: string;
   address?: string;
@@ -79,8 +79,6 @@ export default function LeadDetailPage() {
     );
   }
 
-  const ratingNum = typeof lead.rating === 'string' ? parseFloat(lead.rating) : lead.rating;
-
   return (
     <div className="min-h-screen bg-gray-50">
       <Sidebar />
@@ -111,13 +109,15 @@ export default function LeadDetailPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-4 gap-4 mb-8">
-          {ratingNum && (
+          {lead.rating && (
             <div className="bg-white rounded-xl border border-gray-100 p-4">
               <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
                 <Star size={14} className="fill-yellow-400 text-yellow-400" />
                 Rating
               </div>
-              <div className="text-2xl font-bold text-gray-900">{ratingNum.toFixed(1)}</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {typeof lead.rating === 'string' ? parseFloat(lead.rating).toFixed(1) : lead.rating.toFixed(1)}
+              </div>
               {lead.reviews && (
                 <div className="text-xs text-gray-400">{lead.reviews} reviews</div>
               )}
