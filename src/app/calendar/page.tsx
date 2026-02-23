@@ -1,73 +1,86 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '@/components/sidebar';
-import { Calendar, Clock, ChevronLeft, ChevronRight, X, Phone, MapPin, User, Briefcase, Edit2, Trash2 } from 'lucide-react';
+import { Calendar, Clock, ChevronLeft, ChevronRight, X, Phone, MapPin, User, Briefcase, Edit2, Trash2, Loader2, ExternalLink } from 'lucide-react';
+import { API_URL } from '@/lib/config';
 
 interface Appointment {
   id: string;
   time: string;
+  endTime?: string;
   name: string;
   service: string;
-  phone: string;
+  phone?: string;
   email?: string;
-  address?: string;
   notes?: string;
-  clientName?: string;
-  status: 'confirmed' | 'pending' | 'completed';
+  status: string;
+  date: string;
 }
 
 export default function CalendarPage() {
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
 
-  const appointments: Appointment[] = [
+  useEffect(() => {
+    fetchBookings();
+  }, [currentDate]);
+
+  const fetchBookings = async () => {
+    setLoading(true);
+    setError('');
+    
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(`${API_URL}/api/calendar/bookings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const data = await res.json();
+      
+      if (res.ok) {
+        setAppointments(data.bookings || []);
+      } else {
+        setError('Failed to load calendar');
+        // Fall back to sample data
+        setAppointments(getSampleAppointments());
+      }
+    } catch (err) {
+      console.error('Calendar fetch error:', err);
+      setError('Using demo data');
+      setAppointments(getSampleAppointments());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getSampleAppointments = (): Appointment[] => [
     { 
       id: '1', 
-      time: '9:00 AM', 
+      time: '9:00 AM',
+      endTime: '9:30 AM', 
       name: 'John Peterson', 
       service: 'Roof Inspection', 
       phone: '+1 555-0101',
       email: 'john@email.com',
-      address: '123 Oak Street, Daytona Beach, FL',
       notes: 'Customer mentioned possible leak in attic',
-      clientName: 'ABC Roofing Co',
-      status: 'confirmed'
+      status: 'confirmed',
+      date: new Date().toISOString().split('T')[0]
     },
     { 
       id: '2', 
-      time: '10:30 AM', 
+      time: '10:30 AM',
+      endTime: '11:00 AM', 
       name: 'Sarah Miller', 
-      service: 'Drain Cleaning', 
+      service: 'Consultation', 
       phone: '+1 555-0102',
       email: 'sarah@email.com',
-      address: '456 Pine Ave, Orlando, FL',
-      notes: 'Recurring customer, prefers morning appointments',
-      clientName: 'Quick Plumber LLC',
-      status: 'confirmed'
-    },
-    { 
-      id: '3', 
-      time: '2:00 PM', 
-      name: 'Mike Ross', 
-      service: 'HVAC Tune-up', 
-      phone: '+1 555-0103',
-      email: 'mike@email.com',
-      address: '789 Elm Blvd, Miami, FL',
-      clientName: 'Elite HVAC Pros',
-      status: 'pending'
-    },
-    { 
-      id: '4', 
-      time: '4:30 PM', 
-      name: 'Emma Wilson', 
-      service: 'Plumbing Repair', 
-      phone: '+1 555-0105',
-      email: 'emma@email.com',
-      address: '321 Maple Dr, Jacksonville, FL',
-      notes: 'Emergency call - water heater leak',
-      clientName: 'Pro Plumber Experts',
-      status: 'confirmed'
+      notes: 'Interested in AI receptionist service',
+      status: 'confirmed',
+      date: new Date().toISOString().split('T')[0]
     },
   ];
 
@@ -82,11 +95,20 @@ export default function CalendarPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'ACCEPTED':
       case 'confirmed': return 'bg-green-100 text-green-700';
+      case 'PENDING':
       case 'pending': return 'bg-yellow-100 text-yellow-700';
+      case 'CANCELLED':
+      case 'cancelled': return 'bg-red-100 text-red-700';
       case 'completed': return 'bg-gray-100 text-gray-700';
-      default: return 'bg-gray-100 text-gray-700';
+      default: return 'bg-blue-100 text-blue-700';
     }
+  };
+
+  const getFilteredAppointments = () => {
+    const todayStr = currentDate.toISOString().split('T')[0];
+    return appointments.filter(apt => apt.date === todayStr || !apt.date);
   };
 
   return (
@@ -97,7 +119,7 @@ export default function CalendarPage() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Calendar</h1>
-            <p className="text-gray-500 mt-1">Appointments booked by your AI agents</p>
+            <p className="text-gray-500 mt-1">Appointments from Cal.com</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 p-1">
@@ -123,84 +145,119 @@ export default function CalendarPage() {
             >
               Today
             </button>
+            <a 
+              href="https://cal.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 flex items-center gap-2"
+            >
+              <ExternalLink size={16} />
+              Open Cal.com
+            </a>
           </div>
         </div>
 
         {/* Date Display */}
         <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6">
           <h2 className="font-semibold text-gray-900">{formatDate()}</h2>
+          {error && <p className="text-xs text-yellow-600 mt-1">{error}</p>}
         </div>
+
+        {/* Loading */}
+        {loading && (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 size={32} className="animate-spin text-blue-600" />
+          </div>
+        )}
 
         {/* Appointments List */}
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-          {appointments.length === 0 ? (
-            <div className="text-center py-12">
-              <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
-              <h3 className="font-semibold text-gray-900">No appointments today</h3>
-              <p className="text-sm text-gray-500 mt-1">Appointments booked by your AI will appear here</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {appointments.map((apt) => (
-                <div 
-                  key={apt.id} 
-                  className="p-6 flex items-center gap-6 hover:bg-gray-50 transition-colors"
+        {!loading && (
+          <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+            {getFilteredAppointments().length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar size={48} className="mx-auto text-gray-300 mb-4" />
+                <h3 className="font-semibold text-gray-900">No appointments today</h3>
+                <p className="text-sm text-gray-500 mt-1">Bookings from Cal.com will appear here</p>
+                <a 
+                  href="https://cal.com"
+                  target="_blank"
+                  className="inline-block mt-4 text-blue-600 hover:underline"
                 >
-                  {/* Time */}
-                  <div className="w-24 text-center flex-shrink-0">
-                    <div className="font-bold text-lg text-gray-900">{apt.time}</div>
-                  </div>
-
-                  {/* Status Indicator */}
-                  <div className="w-3 h-3 rounded-full bg-green-500 flex-shrink-0" />
-
-                  {/* Details */}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-900">{apt.name}</div>
-                    <div className="text-sm text-gray-500">{apt.service}</div>
-                    {apt.clientName && (
-                      <div className="text-xs text-blue-600 mt-1">{apt.clientName}</div>
-                    )}
-                  </div>
-
-                  {/* Phone */}
-                  <div className="text-sm text-gray-500 hidden md:block">
-                    {apt.phone}
-                  </div>
-
-                  {/* Status Badge */}
-                  <span className={`text-xs font-semibold px-3 py-1 rounded-full ${getStatusColor(apt.status)}`}>
-                    {apt.status}
-                  </span>
-
-                  {/* View Details Button */}
-                  <button 
-                    onClick={() => setSelectedAppointment(apt)}
-                    className="text-blue-600 hover:text-blue-700 font-medium text-sm hover:underline"
+                  View in Cal.com →
+                </a>
+              </div>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {getFilteredAppointments().map((apt) => (
+                  <div 
+                    key={apt.id} 
+                    className="p-6 flex items-center gap-6 hover:bg-gray-50 transition-colors"
                   >
-                    View Details
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                    {/* Time */}
+                    <div className="w-24 text-center flex-shrink-0">
+                      <div className="font-bold text-lg text-gray-900">{apt.time}</div>
+                      {apt.endTime && (
+                        <div className="text-xs text-gray-400">- {apt.endTime}</div>
+                      )}
+                    </div>
+
+                    {/* Status Indicator */}
+                    <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                      apt.status === 'confirmed' || apt.status === 'ACCEPTED' ? 'bg-green-500' :
+                      apt.status === 'pending' || apt.status === 'PENDING' ? 'bg-yellow-500' :
+                      'bg-blue-500'
+                    }`} />
+
+                    {/* Details */}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900">{apt.name}</div>
+                      <div className="text-sm text-gray-500">{apt.service}</div>
+                    </div>
+
+                    {/* Phone */}
+                    {apt.phone && (
+                      <a 
+                        href={`tel:${apt.phone}`}
+                        className="text-sm text-blue-600 hover:underline hidden md:block"
+                      >
+                        {apt.phone}
+                      </a>
+                    )}
+
+                    {/* Status Badge */}
+                    <span className={`text-xs font-semibold px-3 py-1 rounded-full capitalize ${getStatusColor(apt.status)}`}>
+                      {apt.status}
+                    </span>
+
+                    {/* View Details Button */}
+                    <button 
+                      onClick={() => setSelectedAppointment(apt)}
+                      className="text-blue-600 hover:text-blue-700 font-medium text-sm hover:underline"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mt-6">
           <div className="bg-white rounded-xl border border-gray-100 p-4">
             <div className="text-2xl font-bold text-gray-900">{appointments.length}</div>
-            <div className="text-sm text-gray-500">Total Appointments</div>
+            <div className="text-sm text-gray-500">This Week</div>
           </div>
           <div className="bg-white rounded-xl border border-gray-100 p-4">
             <div className="text-2xl font-bold text-green-600">
-              {appointments.filter(a => a.status === 'confirmed').length}
+              {appointments.filter(a => a.status === 'confirmed' || a.status === 'ACCEPTED').length}
             </div>
             <div className="text-sm text-gray-500">Confirmed</div>
           </div>
           <div className="bg-white rounded-xl border border-gray-100 p-4">
             <div className="text-2xl font-bold text-yellow-600">
-              {appointments.filter(a => a.status === 'pending').length}
+              {appointments.filter(a => a.status === 'pending' || a.status === 'PENDING').length}
             </div>
             <div className="text-sm text-gray-500">Pending</div>
           </div>
@@ -215,7 +272,7 @@ export default function CalendarPage() {
             <div className="p-6 border-b border-gray-100 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">Appointment Details</h2>
-                <p className="text-sm text-gray-500">{selectedAppointment.time} • {formatDate()}</p>
+                <p className="text-sm text-gray-500">{selectedAppointment.time} • {selectedAppointment.date || formatDate()}</p>
               </div>
               <button 
                 onClick={() => setSelectedAppointment(null)}
@@ -241,20 +298,22 @@ export default function CalendarPage() {
                 <Briefcase size={20} className="text-gray-400 mt-0.5" />
                 <div>
                   <div className="font-semibold text-gray-900">{selectedAppointment.service}</div>
-                  <div className="text-sm text-gray-500">Service Requested</div>
+                  <div className="text-sm text-gray-500">Service</div>
                 </div>
               </div>
 
               {/* Phone */}
-              <div className="flex items-start gap-3">
-                <Phone size={20} className="text-gray-400 mt-0.5" />
-                <div>
-                  <a href={`tel:${selectedAppointment.phone}`} className="font-semibold text-blue-600 hover:underline">
-                    {selectedAppointment.phone}
-                  </a>
-                  <div className="text-sm text-gray-500">Phone</div>
+              {selectedAppointment.phone && (
+                <div className="flex items-start gap-3">
+                  <Phone size={20} className="text-gray-400 mt-0.5" />
+                  <div>
+                    <a href={`tel:${selectedAppointment.phone}`} className="font-semibold text-blue-600 hover:underline">
+                      {selectedAppointment.phone}
+                    </a>
+                    <div className="text-sm text-gray-500">Phone</div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Email */}
               {selectedAppointment.email && (
@@ -265,28 +324,6 @@ export default function CalendarPage() {
                       {selectedAppointment.email}
                     </a>
                     <div className="text-sm text-gray-500">Email</div>
-                  </div>
-                </div>
-              )}
-
-              {/* Address */}
-              {selectedAppointment.address && (
-                <div className="flex items-start gap-3">
-                  <MapPin size={20} className="text-gray-400 mt-0.5" />
-                  <div>
-                    <div className="font-semibold text-gray-900">{selectedAppointment.address}</div>
-                    <div className="text-sm text-gray-500">Service Address</div>
-                  </div>
-                </div>
-              )}
-
-              {/* Client */}
-              {selectedAppointment.clientName && (
-                <div className="flex items-start gap-3">
-                  <div className="w-5 h-5 rounded bg-blue-100 flex items-center justify-center text-xs text-blue-600 font-bold">C</div>
-                  <div>
-                    <div className="font-semibold text-gray-900">{selectedAppointment.clientName}</div>
-                    <div className="text-sm text-gray-500">Business Client</div>
                   </div>
                 </div>
               )}
@@ -302,21 +339,21 @@ export default function CalendarPage() {
 
             {/* Modal Actions */}
             <div className="p-6 border-t border-gray-100 flex gap-3">
-              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50">
-                <Edit2 size={18} />
-                Edit
-              </button>
-              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-red-200 text-red-600 rounded-xl font-semibold hover:bg-red-50">
-                <Trash2 size={18} />
-                Cancel
-              </button>
-              <a 
-                href={`tel:${selectedAppointment.phone}`}
-                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700"
+              <button 
+                onClick={() => setSelectedAppointment(null)}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl font-semibold text-gray-700 hover:bg-gray-50"
               >
-                <Phone size={18} />
-                Call
-              </a>
+                Close
+              </button>
+              {selectedAppointment.phone && (
+                <a 
+                  href={`tel:${selectedAppointment.phone}`}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700"
+                >
+                  <Phone size={18} />
+                  Call
+                </a>
+              )}
             </div>
           </div>
         </div>
