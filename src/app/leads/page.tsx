@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/sidebar';
-import { Search, Plus, Phone, Mail, MoreVertical, Download, Loader2, MapPin, Wrench, Star, ExternalLink } from 'lucide-react';
+import { Search, Plus, Phone, Mail, MoreVertical, Download, Loader2, MapPin, Wrench, Star, ExternalLink, Upload } from 'lucide-react';
 import { API_URL } from '@/lib/config';
 import Link from 'next/link';
 
@@ -45,6 +45,12 @@ export default function LeadsPage() {
     type: 'roofing',
     maxResults: 20
   });
+
+  // Upload modal state
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<any>(null);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetchLeads();
@@ -91,6 +97,38 @@ export default function LeadsPage() {
     }
   };
 
+  const handleUpload = async () => {
+    if (!uploadFile) return;
+    
+    setUploading(true);
+    setUploadResult(null);
+    
+    const formData = new FormData();
+    formData.append('file', uploadFile);
+    
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(`${API_URL}/api/leads/upload-csv`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData
+      });
+      
+      const data = await res.json();
+      
+      if (data.success) {
+        setUploadResult(data);
+        fetchLeads(); // Refresh leads
+      } else {
+        alert('Upload failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error: any) {
+      alert('Upload failed: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const statusColors: Record<string, string> = {
     'New Lead': 'bg-blue-50 text-blue-600 border-blue-100',
     'Contacted': 'bg-yellow-50 text-yellow-600 border-yellow-100',
@@ -119,6 +157,13 @@ export default function LeadsPage() {
             <p className="text-gray-500 mt-1">{leads.length} leads in your pipeline</p>
           </div>
           <div className="flex gap-3">
+            <button 
+              onClick={() => setShowUpload(true)}
+              className="border border-gray-300 text-gray-700 px-5 py-2.5 rounded-xl font-semibold hover:bg-gray-50 transition-colors flex items-center gap-2"
+            >
+              <Upload size={18} />
+              Upload CSV
+            </button>
             <button 
               onClick={() => setShowScraper(true)}
               className="border border-blue-600 text-blue-600 px-5 py-2.5 rounded-xl font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2"
@@ -177,13 +222,22 @@ export default function LeadsPage() {
               <div className="text-center py-12">
                 <MapPin size={48} className="mx-auto text-gray-300 mb-4" />
                 <h3 className="font-semibold text-gray-900">No leads yet</h3>
-                <p className="text-sm text-gray-500 mt-1 mb-4">Scrape Google Maps to find local businesses</p>
-                <button 
-                  onClick={() => setShowScraper(true)}
-                  className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  Start Scraping
-                </button>
+                <p className="text-sm text-gray-500 mt-1 mb-4">Scrape Google Maps or upload a CSV to get started</p>
+                <div className="flex gap-3 justify-center">
+                  <button 
+                    onClick={() => setShowUpload(true)}
+                    className="bg-green-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-green-700 transition-colors flex items-center gap-2"
+                  >
+                    <Upload size={18} />
+                    Upload CSV
+                  </button>
+                  <button 
+                    onClick={() => setShowScraper(true)}
+                    className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    Start Scraping
+                  </button>
+                </div>
               </div>
             ) : (
               <table className="w-full">
@@ -368,6 +422,84 @@ export default function LeadsPage() {
                   </>
                 ) : (
                   'Start Scraping'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Modal */}
+      {showUpload && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                <Upload size={24} className="text-green-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Upload Leads CSV</h2>
+                <p className="text-sm text-gray-500">Import leads from a spreadsheet</p>
+              </div>
+            </div>
+
+            {uploadResult ? (
+              <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+                <p className="text-green-700 font-medium">
+                  ✅ Uploaded {uploadResult.stats.saved} leads ({uploadResult.stats.duplicates} duplicates skipped)
+                </p>
+              </div>
+            ) : null}
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setUploadFile(file);
+                      setUploadResult(null);
+                    }
+                  }}
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {uploadFile && (
+                  <p className="text-sm text-gray-500 mt-2">Selected: {uploadFile.name}</p>
+                )}
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-600">
+                <p className="font-medium mb-2">CSV columns supported:</p>
+                <p className="text-xs">Business Name, Phone, Email, City, State, Rating, Reviews, Address, Website, Industry</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowUpload(false);
+                  setUploadResult(null);
+                  setUploadFile(null);
+                }}
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl font-semibold hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpload}
+                disabled={uploading || !uploadFile}
+                className="flex-1 px-4 py-3 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  'Upload'
                 )}
               </button>
             </div>
