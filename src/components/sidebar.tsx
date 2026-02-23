@@ -12,13 +12,15 @@ import {
   BarChart3,
   LogOut,
   MessageSquare,
-  Building
+  Building,
+  Upload
 } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Clients', href: '/clients', icon: Building },
   { name: 'Leads', href: '/leads', icon: Users },
+  { name: 'Upload', href: '/upload', icon: Upload },
   { name: 'Calls', href: '/calls', icon: Phone },
   { name: 'Agents', href: '/agents', icon: Bot },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
