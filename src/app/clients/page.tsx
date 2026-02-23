@@ -8,15 +8,16 @@ import { useRouter } from 'next/navigation';
 
 interface Client {
   id: string;
-  name: string;
-  businessName: string;
+  name?: string;
+  business_name: string;
   industry: string;
-  phone: string;
-  email: string;
-  vapiPhone?: string;
-  vapiAgentId?: string;
+  contact_phone?: string;
+  contact_email?: string;
+  business_phone?: string;
+  vapi_phone?: string;
+  vapi_agent_id?: string;
   status: 'active' | 'pending' | 'inactive';
-  createdAt: string;
+  created_at: string;
 }
 
 export default function ClientsPage() {
@@ -50,8 +51,8 @@ export default function ClientsPage() {
 
   const filteredClients = clients.filter(c => 
     c.name?.toLowerCase().includes(search.toLowerCase()) ||
-    c.businessName?.toLowerCase().includes(search.toLowerCase()) ||
-    c.email?.toLowerCase().includes(search.toLowerCase())
+    c.business_name?.toLowerCase().includes(search.toLowerCase()) ||
+    c.contact_email?.toLowerCase().includes(search.toLowerCase())
   );
 
   const getStatusColor = (status: string) => {
@@ -130,7 +131,7 @@ export default function ClientsPage() {
                         {getIndustryIcon(client.industry)}
                       </div>
                       <div>
-                        <h3 className="font-bold text-gray-900">{client.businessName || client.name}</h3>
+                        <h3 className="font-bold text-gray-900">{client.business_name || client.name}</h3>
                         <p className="text-sm text-gray-500">{client.industry || 'Service Business'}</p>
                       </div>
                     </div>
@@ -142,16 +143,16 @@ export default function ClientsPage() {
                   <div className="mt-4 space-y-2">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Phone size={14} className="text-gray-400" />
-                      {client.phone || 'No phone'}
+                      {client.contact_phone || client.business_phone || 'No phone'}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Mail size={14} className="text-gray-400" />
-                      {client.email || 'No email'}
+                      {client.contact_email || 'No email'}
                     </div>
-                    {client.vapiPhone && (
+                    {client.vapi_phone && (
                       <div className="flex items-center gap-2 text-sm text-green-600">
                         <Phone size={14} />
-                        AI Line: {client.vapiPhone}
+                        AI Line: {client.vapi_phone}
                       </div>
                     )}
                   </div>
