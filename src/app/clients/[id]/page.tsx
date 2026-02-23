@@ -35,6 +35,7 @@ export default function ClientDetailPage() {
   const router = useRouter();
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
+  const [provisioning, setProvisioning] = useState(false);
 
   useEffect(() => {
     fetchClient();
@@ -55,6 +56,34 @@ export default function ClientDetailPage() {
       console.error('Failed to fetch client:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const provisionAI = async () => {
+    if (!client) return;
+    setProvisioning(true);
+    
+    try {
+      const token = localStorage.getItem('auth_token');
+      const res = await fetch(`${API_URL}/api/clients/${client.id}/provision-vapi`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}` 
+        }
+      });
+
+      const data = await res.json();
+      
+      if (data.success) {
+        setClient(data.client);
+      } else {
+        alert('Provisioning failed: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error: any) {
+      alert('Provisioning failed: ' + error.message);
+    } finally {
+      setProvisioning(false);
     }
   };
 
@@ -202,8 +231,19 @@ export default function ClientDetailPage() {
               <div className="text-center py-4">
                 <Bot size={32} className="mx-auto text-gray-300 mb-2" />
                 <p className="text-sm text-gray-500">AI not yet provisioned</p>
-                <button className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold">
-                  Provision AI
+                <button 
+                  onClick={provisionAI}
+                  disabled={provisioning}
+                  className="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 mx-auto"
+                >
+                  {provisioning ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      Provisioning...
+                    </>
+                  ) : (
+                    'Provision AI'
+                  )}
                 </button>
               </div>
             )}
