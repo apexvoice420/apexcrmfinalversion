@@ -20,6 +20,7 @@ import {
 
 const navItems = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Pipeline', href: '/pipeline', icon: TrendingUp },
   { name: 'Clients', href: '/clients', icon: Building },
   { name: 'Leads', href: '/leads', icon: Users },
   { name: 'Upload', href: '/upload', icon: Upload },
