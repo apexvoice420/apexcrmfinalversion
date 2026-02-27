@@ -96,7 +96,7 @@ export default function PipelinePage() {
   const updateLeadStatus = async (leadId: number, newStatus: string) => {
     setUpdating(true);
     try {
-      const res = await fetch(`${API_URL}/leads/${leadId}`, {
+      const res = await fetch(`${API_URL}/api/leads/${leadId}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })
