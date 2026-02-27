@@ -13,7 +13,9 @@ import {
   LogOut,
   MessageSquare,
   Building,
-  Upload
+  Upload,
+  TrendingUp,
+  Mail
 } from 'lucide-react';
 
 const navItems = [
@@ -23,9 +25,11 @@ const navItems = [
   { name: 'Upload', href: '/upload', icon: Upload },
   { name: 'Calls', href: '/calls', icon: Phone },
   { name: 'Agents', href: '/agents', icon: Bot },
+  { name: 'Agent E', href: '/agent-e', icon: Mail },
+  { name: 'Workflows', href: '/workflows', icon: BarChart3 },
+  { name: 'Campaigns', href: '/campaigns', icon: MessageSquare },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Messages', href: '/messages', icon: MessageSquare },
+  { name: 'Analytics', href: '/analytics', icon: TrendingUp },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
