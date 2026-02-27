@@ -15,7 +15,8 @@ import {
   Building,
   Upload,
   TrendingUp,
-  Mail
+  Mail,
+  Sparkles
 } from 'lucide-react';
 
 const navItems = [
@@ -27,6 +28,7 @@ const navItems = [
   { name: 'Calls', href: '/calls', icon: Phone },
   { name: 'Agents', href: '/agents', icon: Bot },
   { name: 'Agent E', href: '/agent-e', icon: Mail },
+  { name: 'Marketing', href: '/marketing', icon: Sparkles },
   { name: 'Workflows', href: '/workflows', icon: BarChart3 },
   { name: 'Campaigns', href: '/campaigns', icon: MessageSquare },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
