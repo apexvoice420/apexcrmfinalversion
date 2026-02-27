@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/sidebar';
 import { 
   Building, User, Phone, Mail, MapPin, Briefcase, 
   Calendar, MessageSquare, Mic, Loader2, ArrowLeft,
-  CheckCircle, AlertCircle, FileText, Upload, X
+  CheckCircle, AlertCircle, FileText, Upload, X, Trash2
 } from 'lucide-react';
 import { API_URL } from '@/lib/config';
 
@@ -20,6 +20,14 @@ const INDUSTRIES = [
   { value: 'other', label: 'Other', icon: '🏗️' },
 ];
 
+const DOCUMENT_TYPES = [
+  { value: 'services_pdf', label: 'Services List', description: 'List of services offered', icon: '📋' },
+  { value: 'pricing_sheet', label: 'Pricing Sheet', description: 'Pricing information', icon: '💰' },
+  { value: 'faq_document', label: 'FAQ Document', description: 'Common questions & answers', icon: '❓' },
+  { value: 'custom_script', label: 'Custom Script', description: 'Special call handling instructions', icon: '📝' },
+  { value: 'other', label: 'Other Document', description: 'Any other reference material', icon: '📄' },
+];
+
 const STEPS = [
   { id: 1, title: 'Business Info', description: 'Basic company details' },
   { id: 2, title: 'Contact Info', description: 'Phone and email' },
@@ -28,12 +36,20 @@ const STEPS = [
   { id: 5, title: 'Review', description: 'Confirm and create' },
 ];
 
+interface DocumentFile {
+  file: File;
+  type: string;
+  typeName: string;
+}
+
 export default function NewClientPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<DocumentFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedDocType, setSelectedDocType] = useState('services_pdf');
   
   const [formData, setFormData] = useState({
     // Business Info
@@ -56,19 +72,6 @@ export default function NewClientPage() {
     services: '',
     faq: '',
   });
-  
-  // Documents state
-  const [documents, setDocuments] = useState<{
-    servicesPdf: File | null;
-    pricingSheet: File | null;
-    faqDoc: File | null;
-    customScript: File | null;
-  }>({
-    servicesPdf: null,
-    pricingSheet: null,
-    faqDoc: null,
-    customScript: null,
-  });
 
   const updateForm = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -82,6 +85,50 @@ export default function NewClientPage() {
     if (step > 1) setStep(step - 1);
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const typeInfo = DOCUMENT_TYPES.find(t => t.value === selectedDocType);
+    
+    Array.from(files).forEach(file => {
+      // Check if document type already exists
+      const existingIndex = documents.findIndex(d => d.type === selectedDocType);
+      
+      if (existingIndex >= 0) {
+        // Replace existing document of this type
+        const newDocs = [...documents];
+        newDocs[existingIndex] = {
+          file,
+          type: selectedDocType,
+          typeName: typeInfo?.label || selectedDocType
+        };
+        setDocuments(newDocs);
+      } else {
+        setDocuments(prev => [...prev, {
+          file,
+          type: selectedDocType,
+          typeName: typeInfo?.label || selectedDocType
+        }]);
+      }
+    });
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeDocument = (index: number) => {
+    setDocuments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     setError('');
@@ -89,7 +136,7 @@ export default function NewClientPage() {
     try {
       const token = localStorage.getItem('auth_token');
       
-      // Create client
+      // Create client first
       const res = await fetch(`${API_URL}/api/clients`, {
         method: 'POST',
         headers: {
@@ -105,35 +152,21 @@ export default function NewClientPage() {
       }
 
       const { client } = await res.json();
-      
+
       // Upload documents if any
-      const docsToUpload = Object.entries(documents).filter(([_, file]) => file !== null);
-      
-      if (docsToUpload.length > 0 && client?.id) {
-        const docTypeMap: Record<string, string> = {
-          servicesPdf: 'services_pdf',
-          pricingSheet: 'pricing_sheet',
-          faqDoc: 'faq_document',
-          customScript: 'custom_script',
-        };
-        
-        for (const [key, file] of docsToUpload) {
-          const docFormData = new FormData();
-          docFormData.append('document', file as File);
-          docFormData.append('documentType', docTypeMap[key]);
-          
-          try {
-            await fetch(`${API_URL}/api/clients/${client.id}/documents`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${token}`
-              },
-              body: docFormData
-            });
-          } catch (uploadErr) {
-            console.error('Document upload failed:', uploadErr);
-            // Continue even if upload fails
-          }
+      if (documents.length > 0) {
+        for (const doc of documents) {
+          const formData = new FormData();
+          formData.append('document', doc.file);
+          formData.append('documentType', doc.type);
+
+          await fetch(`${API_URL}/api/clients/${client.id}/documents`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
         }
       }
 
@@ -168,7 +201,7 @@ export default function NewClientPage() {
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Briefcase *
+                Industry *
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {INDUSTRIES.map((ind) => (
@@ -365,172 +398,91 @@ export default function NewClientPage() {
       case 4:
         return (
           <div className="space-y-6">
-            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-100">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
               <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                <FileText size={20} className="text-purple-500" />
-                Upload Documents (Optional)
+                <Upload size={20} className="text-blue-600" />
+                Upload Business Documents
               </h3>
-              <p className="text-sm text-gray-600 mt-1">Upload business documents to help train the AI receptionist</p>
+              <p className="text-sm text-gray-600 mt-1">Help the AI understand their business better. These documents will be used to train the receptionist.</p>
             </div>
 
-            {/* Services PDF */}
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h4 className="font-semibold text-gray-900">Services PDF</h4>
-                  <p className="text-xs text-gray-500">List of services your business offers</p>
-                </div>
-                {documents.servicesPdf && (
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1">
-                    <CheckCircle size={12} />
-                    Attached
-                  </span>
-                )}
-              </div>
-              <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-4 cursor-pointer hover:border-purple-300 hover:bg-purple-50 transition-colors">
-                <Upload size={20} className="text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  {documents.servicesPdf ? documents.servicesPdf.name : 'Click to upload PDF'}
-                </span>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,.txt"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setDocuments(prev => ({ ...prev, servicesPdf: file }));
-                  }}
-                />
+            {/* Document Type Selector */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Select Document Type
               </label>
-              {documents.servicesPdf && (
-                <button
-                  onClick={() => setDocuments(prev => ({ ...prev, servicesPdf: null }))}
-                  className="mt-2 text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
-                >
-                  <X size={12} /> Remove
-                </button>
-              )}
-            </div>
-
-            {/* Pricing Sheet */}
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h4 className="font-semibold text-gray-900">Pricing Sheet</h4>
-                  <p className="text-xs text-gray-500">Your service pricing information</p>
-                </div>
-                {documents.pricingSheet && (
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1">
-                    <CheckCircle size={12} />
-                    Attached
-                  </span>
-                )}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {DOCUMENT_TYPES.map((docType) => (
+                  <button
+                    key={docType.value}
+                    type="button"
+                    onClick={() => setSelectedDocType(docType.value)}
+                    className={`p-4 rounded-xl border-2 text-left transition-all ${
+                      selectedDocType === docType.value
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className="text-xl">{docType.icon}</span>
+                    <p className="font-medium text-gray-900 mt-1">{docType.label}</p>
+                    <p className="text-xs text-gray-500">{docType.description}</p>
+                  </button>
+                ))}
               </div>
-              <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-4 cursor-pointer hover:border-purple-300 hover:bg-purple-50 transition-colors">
-                <Upload size={20} className="text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  {documents.pricingSheet ? documents.pricingSheet.name : 'Click to upload'}
-                </span>
-                <input
-                  type="file"
-                  accept=".pdf,.csv,.xlsx,.xls,.doc,.docx,.txt"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setDocuments(prev => ({ ...prev, pricingSheet: file }));
-                  }}
-                />
-              </label>
-              {documents.pricingSheet && (
-                <button
-                  onClick={() => setDocuments(prev => ({ ...prev, pricingSheet: null }))}
-                  className="mt-2 text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
-                >
-                  <X size={12} /> Remove
-                </button>
-              )}
             </div>
 
-            {/* FAQ Document */}
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h4 className="font-semibold text-gray-900">FAQ Document</h4>
-                  <p className="text-xs text-gray-500">Common questions and answers for the AI</p>
+            {/* Upload Button */}
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.txt"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full p-8 border-2 border-dashed border-gray-300 rounded-xl hover:border-blue-400 hover:bg-blue-50/50 transition-all flex flex-col items-center gap-3"
+              >
+                <Upload size={32} className="text-gray-400" />
+                <div className="text-center">
+                  <p className="font-medium text-gray-700">Click to upload or drag and drop</p>
+                  <p className="text-sm text-gray-500">PDF, PNG, JPG, DOC, DOCX, TXT (max 10MB)</p>
                 </div>
-                {documents.faqDoc && (
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1">
-                    <CheckCircle size={12} />
-                    Attached
-                  </span>
-                )}
-              </div>
-              <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-4 cursor-pointer hover:border-purple-300 hover:bg-purple-50 transition-colors">
-                <Upload size={20} className="text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  {documents.faqDoc ? documents.faqDoc.name : 'Click to upload'}
-                </span>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,.txt"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setDocuments(prev => ({ ...prev, faqDoc: file }));
-                  }}
-                />
-              </label>
-              {documents.faqDoc && (
-                <button
-                  onClick={() => setDocuments(prev => ({ ...prev, faqDoc: null }))}
-                  className="mt-2 text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
-                >
-                  <X size={12} /> Remove
-                </button>
-              )}
+              </button>
             </div>
 
-            {/* Custom Script */}
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h4 className="font-semibold text-gray-900">Custom Scripts</h4>
-                  <p className="text-xs text-gray-500">Special call handling instructions or scripts</p>
-                </div>
-                {documents.customScript && (
-                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1">
-                    <CheckCircle size={12} />
-                    Attached
-                  </span>
-                )}
+            {/* Uploaded Documents List */}
+            {documents.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-semibold text-gray-700">Uploaded Documents ({documents.length})</h4>
+                {documents.map((doc, index) => (
+                  <div 
+                    key={index}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-200"
+                  >
+                    <div className="flex items-center gap-3">
+                      <FileText size={20} className="text-blue-600" />
+                      <div>
+                        <p className="font-medium text-gray-900">{doc.file.name}</p>
+                        <p className="text-xs text-gray-500">{doc.typeName} • {formatFileSize(doc.file.size)}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeDocument(index)}
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
               </div>
-              <label className="flex items-center justify-center gap-2 border-2 border-dashed border-gray-200 rounded-xl p-4 cursor-pointer hover:border-purple-300 hover:bg-purple-50 transition-colors">
-                <Upload size={20} className="text-gray-400" />
-                <span className="text-sm text-gray-600">
-                  {documents.customScript ? documents.customScript.name : 'Click to upload'}
-                </span>
-                <input
-                  type="file"
-                  accept=".pdf,.doc,.docx,.txt"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setDocuments(prev => ({ ...prev, customScript: file }));
-                  }}
-                />
-              </label>
-              {documents.customScript && (
-                <button
-                  onClick={() => setDocuments(prev => ({ ...prev, customScript: null }))}
-                  className="mt-2 text-xs text-red-500 hover:text-red-700 flex items-center gap-1"
-                >
-                  <X size={12} /> Remove
-                </button>
-              )}
-            </div>
+            )}
 
-            <p className="text-xs text-gray-400 text-center">
-              Supported formats: PDF, DOC, DOCX, TXT, CSV, XLS (max 10MB each)
+            <p className="text-xs text-gray-500">
+              💡 <strong>Tip:</strong> Uploading service lists, pricing sheets, and FAQs helps the AI answer customer questions accurately.
             </p>
           </div>
         );
@@ -554,7 +506,7 @@ export default function NewClientPage() {
                 </h4>
                 <div className="space-y-2 text-sm">
                   <p><span className="text-gray-500">Name:</span> <span className="font-medium">{formData.businessName || 'Not set'}</span></p>
-                  <p><span className="text-gray-500">Briefcase:</span> <span className="font-medium capitalize">{formData.industry}</span></p>
+                  <p><span className="text-gray-500">Industry:</span> <span className="font-medium capitalize">{formData.industry}</span></p>
                   <p><span className="text-gray-500">Location:</span> <span className="font-medium">{formData.city}, {formData.state}</span></p>
                 </div>
               </div>
@@ -588,14 +540,21 @@ export default function NewClientPage() {
             <div className="bg-white rounded-xl border border-gray-100 p-5">
               <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <FileText size={16} />
-                Documents
+                Documents ({documents.length})
               </h4>
-              <div className="space-y-2 text-sm">
-                <p><span className="text-gray-500">Services PDF:</span> <span className="font-medium">{documents.servicesPdf ? documents.servicesPdf.name : 'Not uploaded'}</span></p>
-                <p><span className="text-gray-500">Pricing Sheet:</span> <span className="font-medium">{documents.pricingSheet ? documents.pricingSheet.name : 'Not uploaded'}</span></p>
-                <p><span className="text-gray-500">FAQ Document:</span> <span className="font-medium">{documents.faqDoc ? documents.faqDoc.name : 'Not uploaded'}</span></p>
-                <p><span className="text-gray-500">Custom Script:</span> <span className="font-medium">{documents.customScript ? documents.customScript.name : 'Not uploaded'}</span></p>
-              </div>
+              {documents.length > 0 ? (
+                <div className="space-y-2">
+                  {documents.map((doc, index) => (
+                    <div key={index} className="flex items-center gap-2 text-sm">
+                      <CheckCircle size={14} className="text-green-500" />
+                      <span className="font-medium">{doc.typeName}:</span>
+                      <span className="text-gray-600">{doc.file.name}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No documents uploaded</p>
+              )}
             </div>
 
             {error && (
