@@ -35,6 +35,7 @@ const navItems = [
   { name: 'Campaigns', href: '/campaigns', icon: MessageSquare },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Analytics', href: '/analytics', icon: TrendingUp },
+  { name: 'GHL Compare', href: '/compare', icon: BarChart3 },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
