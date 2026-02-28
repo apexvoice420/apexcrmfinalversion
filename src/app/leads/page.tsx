@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Sidebar from '@/components/sidebar';
-import { Search, Plus, Phone, Mail, MoreVertical, Download, Loader2, MapPin, Wrench, Star, ExternalLink, Upload } from 'lucide-react';
+import { Search, Plus, Phone, Mail, MoreVertical, Download, Loader2, MapPin, Wrench, Star, ExternalLink, Upload, Sparkles } from 'lucide-react';
 import { API_URL } from '@/lib/config';
 import Link from 'next/link';
 
@@ -52,6 +52,10 @@ export default function LeadsPage() {
   const [uploadResult, setUploadResult] = useState<any>(null);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
 
+  // Enrichment state
+  const [enriching, setEnriching] = useState(false);
+  const [enrichResult, setEnrichResult] = useState<any>(null);
+
   useEffect(() => {
     fetchLeads();
   }, []);
@@ -68,6 +72,39 @@ export default function LeadsPage() {
       console.error('Failed to fetch leads:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Enrich leads missing emails
+  const handleEnrichLeads = async () => {
+    setEnriching(true);
+    setEnrichResult(null);
+    
+    try {
+      // Get leads without email
+      const leadsToEnrich = leads.filter(l => !l.email || l.email === '').map(l => l.id);
+      
+      if (leadsToEnrich.length === 0) {
+        alert('All leads already have emails!');
+        setEnriching(false);
+        return;
+      }
+      
+      const res = await fetch(`${API_URL}/api/leads/enrich/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadIds: leadsToEnrich.slice(0, 50) }) // Max 50 at a time
+      });
+
+      const data = await res.json();
+      
+      setEnrichResult(data);
+      fetchLeads(); // Refresh leads
+      
+    } catch (error: any) {
+      alert('Enrichment failed: ' + error.message);
+    } finally {
+      setEnriching(false);
     }
   };
 
@@ -165,6 +202,23 @@ export default function LeadsPage() {
               Upload CSV
             </button>
             <button 
+              onClick={handleEnrichLeads}
+              disabled={enriching}
+              className="border border-purple-600 text-purple-600 px-5 py-2.5 rounded-xl font-semibold hover:bg-purple-50 transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              {enriching ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Enriching...
+                </>
+              ) : (
+                <>
+                  <Sparkles size={18} />
+                  Enrich Emails
+                </>
+              )}
+            </button>
+            <button 
               onClick={() => setShowScraper(true)}
               className="border border-blue-600 text-blue-600 px-5 py-2.5 rounded-xl font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2"
             >
@@ -177,6 +231,21 @@ export default function LeadsPage() {
             </button>
           </div>
         </div>
+
+        {/* Enrichment Result */}
+        {enrichResult && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center gap-2 text-green-800 font-semibold mb-2">
+              <Sparkles size={18} />
+              Enrichment Complete
+            </div>
+            <div className="text-sm text-green-700">
+              Enriched: <strong>{enrichResult.enriched}</strong> | 
+              Skipped: <strong>{enrichResult.skipped}</strong> | 
+              Failed: <strong>{enrichResult.failed}</strong>
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="bg-white rounded-xl border border-gray-100 p-4 mb-6 flex gap-4 items-center">
