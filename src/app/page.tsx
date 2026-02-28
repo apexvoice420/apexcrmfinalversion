@@ -6,6 +6,7 @@ import Sidebar from '@/components/sidebar';
 import DashboardStats from '@/components/dashboard-stats';
 import CallsChart from '@/components/calls-chart';
 import RecentActivity from '@/components/recent-activity';
+import KevinWidget from '@/components/kevin-widget';
 import { API_URL } from '@/lib/config';
 
 interface Stats {
@@ -89,6 +90,11 @@ export default function Dashboard() {
         <div className="grid lg:grid-cols-2 gap-8">
           <CallsChart />
           <RecentActivity calls={recentCalls} />
+        </div>
+
+        {/* Kevin's Treasury Widget */}
+        <div className="mt-8">
+          <KevinWidget />
         </div>
 
         <div className="mt-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
