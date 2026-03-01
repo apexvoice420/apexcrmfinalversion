@@ -113,7 +113,7 @@ export default function LeadsPage() {
     setScrapeResult(null);
     
     try {
-      const res = await fetch(`${API_URL}/scrape`, {
+      const res = await fetch(`${API_URL}/api/scraper/scrape`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(scrapeForm)
@@ -122,7 +122,7 @@ export default function LeadsPage() {
       const data = await res.json();
       
       if (data.success) {
-        setScrapeResult({ found: data.found, saved: data.saved });
+        setScrapeResult({ found: data.stats?.total || 0, saved: data.stats?.saved || 0 });
         fetchLeads(); // Refresh leads
       } else {
         alert('Scraping failed: ' + (data.error || 'Unknown error'));
