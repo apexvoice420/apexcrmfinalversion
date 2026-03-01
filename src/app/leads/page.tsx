@@ -56,6 +56,22 @@ export default function LeadsPage() {
   const [enriching, setEnriching] = useState(false);
   const [enrichResult, setEnrichResult] = useState<any>(null);
 
+  // Add lead modal state
+  const [showAddLead, setShowAddLead] = useState(false);
+  const [addingLead, setAddingLead] = useState(false);
+  const [newLead, setNewLead] = useState({
+    business_name: '',
+    phone: '',
+    email: '',
+    city: '',
+    state: 'FL',
+    industry: 'roofing',
+    rating: '',
+    reviews: '',
+    website: '',
+    notes: ''
+  });
+
   useEffect(() => {
     fetchLeads();
   }, []);
@@ -166,6 +182,61 @@ export default function LeadsPage() {
     }
   };
 
+  // Add lead manually
+  const handleAddLead = async () => {
+    if (!newLead.business_name || !newLead.phone) {
+      alert('Business name and phone are required');
+      return;
+    }
+
+    setAddingLead(true);
+    
+    try {
+      const res = await fetch(`${API_URL}/leads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          business_name: newLead.business_name,
+          phone: newLead.phone.replace(/\D/g, '').slice(-10),
+          email: newLead.email || null,
+          city: newLead.city || null,
+          state: newLead.state || null,
+          industry: newLead.industry || null,
+          rating: newLead.rating ? parseFloat(newLead.rating) : null,
+          reviews: newLead.reviews ? parseInt(newLead.reviews) : null,
+          website: newLead.website || null,
+          notes: newLead.notes || null,
+          status: 'New Lead'
+        })
+      });
+
+      const data = await res.json();
+      
+      if (data.id || data.lead) {
+        setShowAddLead(false);
+        setNewLead({
+          business_name: '',
+          phone: '',
+          email: '',
+          city: '',
+          state: 'FL',
+          industry: 'roofing',
+          rating: '',
+          reviews: '',
+          website: '',
+          notes: ''
+        });
+        fetchLeads(); // Refresh leads
+      } else {
+        alert('Failed to add lead: ' + (data.error || 'Unknown error'));
+      }
+    } catch (error: any) {
+      alert('Failed to add lead: ' + error.message);
+    } finally {
+      setAddingLead(false);
+    }
+  };
+
   const statusColors: Record<string, string> = {
     'New Lead': 'bg-blue-50 text-blue-600 border-blue-100',
     'Contacted': 'bg-yellow-50 text-yellow-600 border-yellow-100',
@@ -225,7 +296,10 @@ export default function LeadsPage() {
               <MapPin size={18} />
               Scrape Leads
             </button>
-            <button className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <button 
+              onClick={() => setShowAddLead(true)}
+              className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
               <Plus size={18} />
               Add Lead
             </button>
@@ -569,6 +643,183 @@ export default function LeadsPage() {
                   </>
                 ) : (
                   'Upload'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Lead Modal */}
+      {showAddLead && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+                <Plus size={24} className="text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Add New Lead</h2>
+                <p className="text-sm text-gray-500">Manually add a lead to your pipeline</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Name *</label>
+                  <input
+                    type="text"
+                    value={newLead.business_name}
+                    onChange={(e) => setNewLead({...newLead, business_name: e.target.value})}
+                    placeholder="ABC Roofing"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone *</label>
+                  <input
+                    type="tel"
+                    value={newLead.phone}
+                    onChange={(e) => setNewLead({...newLead, phone: e.target.value})}
+                    placeholder="(386) 555-1234"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={newLead.email}
+                    onChange={(e) => setNewLead({...newLead, email: e.target.value})}
+                    placeholder="contact@abcroofing.com"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                  <input
+                    type="text"
+                    value={newLead.city}
+                    onChange={(e) => setNewLead({...newLead, city: e.target.value})}
+                    placeholder="Orlando"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                  <input
+                    type="text"
+                    value={newLead.state}
+                    onChange={(e) => setNewLead({...newLead, state: e.target.value.toUpperCase()})}
+                    placeholder="FL"
+                    maxLength={2}
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 uppercase"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Industry</label>
+                  <select
+                    value={newLead.industry}
+                    onChange={(e) => setNewLead({...newLead, industry: e.target.value})}
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="roofing">Roofing</option>
+                    <option value="plumbing">Plumbing</option>
+                    <option value="hvac">HVAC</option>
+                    <option value="electrical">Electrical</option>
+                    <option value="landscaping">Landscaping</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="5"
+                    value={newLead.rating}
+                    onChange={(e) => setNewLead({...newLead, rating: e.target.value})}
+                    placeholder="4.5"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Reviews</label>
+                  <input
+                    type="number"
+                    value={newLead.reviews}
+                    onChange={(e) => setNewLead({...newLead, reviews: e.target.value})}
+                    placeholder="50"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                  <input
+                    type="url"
+                    value={newLead.website}
+                    onChange={(e) => setNewLead({...newLead, website: e.target.value})}
+                    placeholder="https://abcroofing.com"
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                  <textarea
+                    value={newLead.notes}
+                    onChange={(e) => setNewLead({...newLead, notes: e.target.value})}
+                    placeholder="Any additional notes..."
+                    rows={3}
+                    className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAddLead(false);
+                  setNewLead({
+                    business_name: '',
+                    phone: '',
+                    email: '',
+                    city: '',
+                    state: 'FL',
+                    industry: 'roofing',
+                    rating: '',
+                    reviews: '',
+                    website: '',
+                    notes: ''
+                  });
+                }}
+                className="flex-1 px-4 py-3 border border-gray-200 rounded-xl font-semibold hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddLead}
+                disabled={addingLead || !newLead.business_name || !newLead.phone}
+                className="flex-1 px-4 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {addingLead ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  'Add Lead'
                 )}
               </button>
             </div>
