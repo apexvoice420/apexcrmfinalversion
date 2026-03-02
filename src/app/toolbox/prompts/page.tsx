@@ -58,7 +58,7 @@ Quick question: how many calls did {companyName} miss last month?
 
 Most {industry} businesses I talk to are shocked when they find out — it's usually 20-30% of all incoming calls.
 
-At ${avgJobValue} average job value, that's real money walking to competitors.
+At {avgJobValue} average job value, that's real money walking to competitors.
 
 {painPoint}
 
@@ -122,8 +122,8 @@ We're excited to set up your AI receptionist for {businessName}.
 
 ## Your Investment
 
-- Setup: ${setupFee}
-- Monthly: ${monthlyFee}/mo
+- Setup: {setupFee}
+- Monthly: {monthlyFee}/mo
 - Usage: Pay-as-you-go
 
 Questions? Reply to this email or call us at 386-282-5413.
@@ -161,19 +161,19 @@ Apex Voice Solutions`
 
 | Item | Cost |
 |------|------|
-| Setup Fee | ${setupFee} |
-| Monthly Retainer | ${monthlyFee}/mo |
-| Usage (estimated) | ${usageEst}/mo |
+| Setup Fee | {setupFee} |
+| Monthly Retainer | {monthlyFee}/mo |
+| Usage (estimated) | {usageEst}/mo |
 
-**Total First Month:** ${totalFirstMonth}
-**Ongoing Monthly:** ${ongoingMonthly}
+**Total First Month:** {totalFirstMonth}
+**Ongoing Monthly:** {ongoingMonthly}
 
 ## ROI Projection
 
-Based on your average job value of ${avgJobValue}:
+Based on your average job value of {avgJobValue}:
 
 - Current missed calls: {missedCallsPerWeek}/week
-- Recovered revenue potential: ${recoveredRevenue}/month
+- Recovered revenue potential: {recoveredRevenue}/month
 - **Payback period: {paybackPeriod}**
 
 ## Timeline
