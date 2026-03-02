@@ -293,7 +293,7 @@ export default function LinkedInPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <File size={16} className="inline mr-1" />
-                  PDF Document (creates LinkedIn carousel)
+                  PDF Document (creates carousel)
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -310,23 +310,23 @@ export default function LinkedInPage() {
                   />
                   <label
                     htmlFor="pdf-upload"
-                    className="flex-1 border-2 border-dashed border-gray-200 rounded-lg px-4 py-3 cursor-pointer hover:border-blue-400 transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 border-2 border-dashed border-gray-200 rounded-lg px-4 py-3 cursor-pointer hover:border-blue-400 transition-colors flex items-center gap-2"
                   >
                     <Upload size={18} className="text-gray-400" />
-                    <span className="text-gray-500">{pdfName || 'Click to upload PDF'}</span>
+                    <span className="text-gray-500">
+                      {pdfName || 'Click to upload PDF...'}
+                    </span>
                   </label>
                   {pdfName && (
                     <button
                       onClick={() => { setPdfFile(null); setPdfName(''); }}
-                      className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg"
+                      className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
                     >
                       <X size={18} />
                     </button>
                   )}
                 </div>
-                {pdfName && (
-                  <p className="text-xs text-green-600 mt-1">✓ {pdfName} ready to upload</p>
-                )}
+                <p className="text-xs text-gray-400 mt-1">LinkedIn will convert PDF to a carousel post</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -431,8 +431,8 @@ export default function LinkedInPage() {
                       </p>
                     )}
                     {post.pdf_path && (
-                      <p className="text-xs text-orange-500 mt-2 truncate">
-                        📄 PDF Carousel
+                      <p className="text-xs text-purple-500 mt-2 truncate">
+                        📄 {post.pdf_path.split('/').pop()}
                       </p>
                     )}
                   </div>

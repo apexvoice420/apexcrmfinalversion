@@ -18,7 +18,8 @@ import {
   Mail,
   Sparkles,
   DollarSign,
-  Linkedin
+  Linkedin,
+  Wrench
 } from 'lucide-react';
 
 const navItems = [
@@ -38,6 +39,9 @@ const navItems = [
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Analytics', href: '/analytics', icon: TrendingUp },
   { name: 'GHL Compare', href: '/compare', icon: BarChart3 },
+  { name: 'Prompt Generator', href: '/toolbox/prompts', icon: Wrench },
+  { name: 'Diagram Builder', href: '/toolbox/diagrams', icon: Wrench },
+  { name: 'Playbook', href: '/toolbox/playbook', icon: Wrench },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
