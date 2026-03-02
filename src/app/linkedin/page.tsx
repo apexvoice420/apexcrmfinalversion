@@ -31,6 +31,8 @@ export default function LinkedInPage() {
   // New post form
   const [content, setContent] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [pdfName, setPdfName] = useState('');
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('08:00');
   const [submitting, setSubmitting] = useState(false);
@@ -80,6 +82,27 @@ export default function LinkedInPage() {
 
     setSubmitting(true);
     try {
+      // Upload PDF if selected
+      let pdfPath = null;
+      if (pdfFile) {
+        const formData = new FormData();
+        formData.append('pdf', pdfFile);
+        
+        const uploadRes = await fetch(`${API_URL}/api/linkedin/upload-pdf`, {
+          method: 'POST',
+          body: formData
+        });
+        
+        const uploadData = await uploadRes.json();
+        if (uploadData.success) {
+          pdfPath = uploadData.pdfPath;
+        } else {
+          alert('Failed to upload PDF: ' + (uploadData.error || 'Unknown error'));
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const scheduledFor = scheduleDate 
         ? new Date(`${scheduleDate}T${scheduleTime}:00`).toISOString()
         : null;
@@ -90,6 +113,7 @@ export default function LinkedInPage() {
         body: JSON.stringify({
           content,
           imageUrl: imageUrl || null,
+          pdfPath,
           scheduledFor
         })
       });
@@ -99,6 +123,8 @@ export default function LinkedInPage() {
       if (data.success) {
         setContent('');
         setImageUrl('');
+        setPdfFile(null);
+        setPdfName('');
         setScheduleDate('');
         setScheduleTime('08:00');
         fetchPosts();
@@ -261,6 +287,28 @@ export default function LinkedInPage() {
                   placeholder="https://example.com/image.jpg"
                   className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <FileText size={16} className="inline mr-1" />
+                  PDF Document (creates carousel)
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setPdfFile(file);
+                      setPdfName(file.name);
+                    }
+                  }}
+                  className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+                {pdfName && (
+                  <p className="text-xs text-green-600 mt-1">📎 {pdfName}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
