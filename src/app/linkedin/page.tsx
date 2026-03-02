@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Sidebar from '@/components/sidebar';
 import { 
   Linkedin, Calendar, Clock, Send, Trash2, RefreshCw, 
-  Check, X, AlertCircle, Image, FileText, Loader2
+  Check, X, AlertCircle, Image, FileText, Loader2, Upload, File
 } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://apex-voice-crm-production.up.railway.app';
@@ -13,6 +13,7 @@ interface LinkedInPost {
   id: number;
   content: string;
   image_url: string | null;
+  pdf_path: string | null;
   scheduled_for: string;
   timezone: string;
   status: 'scheduled' | 'publishing' | 'published' | 'failed';
@@ -291,23 +292,40 @@ export default function LinkedInPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <FileText size={16} className="inline mr-1" />
-                  PDF Document (creates carousel)
+                  <File size={16} className="inline mr-1" />
+                  PDF Document (creates LinkedIn carousel)
                 </label>
-                <input
-                  type="file"
-                  accept=".pdf"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setPdfFile(file);
-                      setPdfName(file.name);
-                    }
-                  }}
-                  className="w-full border border-gray-200 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) {
+                        setPdfFile(e.target.files[0]);
+                        setPdfName(e.target.files[0].name);
+                      }
+                    }}
+                    className="hidden"
+                    id="pdf-upload"
+                  />
+                  <label
+                    htmlFor="pdf-upload"
+                    className="flex-1 border-2 border-dashed border-gray-200 rounded-lg px-4 py-3 cursor-pointer hover:border-blue-400 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Upload size={18} className="text-gray-400" />
+                    <span className="text-gray-500">{pdfName || 'Click to upload PDF'}</span>
+                  </label>
+                  {pdfName && (
+                    <button
+                      onClick={() => { setPdfFile(null); setPdfName(''); }}
+                      className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg"
+                    >
+                      <X size={18} />
+                    </button>
+                  )}
+                </div>
                 {pdfName && (
-                  <p className="text-xs text-green-600 mt-1">📎 {pdfName}</p>
+                  <p className="text-xs text-green-600 mt-1">✓ {pdfName} ready to upload</p>
                 )}
               </div>
 
@@ -410,6 +428,11 @@ export default function LinkedInPage() {
                     {post.image_url && (
                       <p className="text-xs text-blue-500 mt-2 truncate">
                         📷 {post.image_url}
+                      </p>
+                    )}
+                    {post.pdf_path && (
+                      <p className="text-xs text-orange-500 mt-2 truncate">
+                        📄 PDF Carousel
                       </p>
                     )}
                   </div>
