@@ -17,7 +17,8 @@ import {
   TrendingUp,
   Mail,
   Sparkles,
-  DollarSign
+  DollarSign,
+  Linkedin
 } from 'lucide-react';
 
 const navItems = [
@@ -31,6 +32,7 @@ const navItems = [
   { name: 'Kevin (CFO)', href: '/kevin', icon: DollarSign },
   { name: 'Agent E', href: '/agent-e', icon: Mail },
   { name: 'Marketing', href: '/marketing', icon: Sparkles },
+  { name: 'LinkedIn', href: '/linkedin', icon: Linkedin },
   { name: 'Workflows', href: '/workflows', icon: BarChart3 },
   { name: 'Campaigns', href: '/campaigns', icon: MessageSquare },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
