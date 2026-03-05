@@ -110,6 +110,13 @@ export default function AgentEPage() {
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  
+  // Compose email state
+  const [showCompose, setShowCompose] = useState(false);
+  const [composeTo, setComposeTo] = useState('');
+  const [composeSubject, setComposeSubject] = useState('');
+  const [composeBody, setComposeBody] = useState('');
+  const [sendingCompose, setSendingCompose] = useState(false);
 
   useEffect(() => {
     fetchLeads();
@@ -327,6 +334,48 @@ https://cal.com/apexvoicesolutions`;
     }
   };
 
+  const sendComposedEmail = async () => {
+    if (!composeTo || !composeSubject || !composeBody) {
+      alert('Please fill in all fields');
+      return;
+    }
+    
+    setSendingCompose(true);
+    try {
+      // Find lead by email to get lead_id
+      const lead = leads.find(l => l.email === composeTo);
+      
+      const res = await fetch(`${API_URL}/api/emails/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: composeTo,
+          subject: composeSubject,
+          body: composeBody,
+          lead_id: lead?.id,
+          from: 'maurice.pinnock@apexvoicesolutions.com',
+        }),
+      });
+      
+      if (res.ok) {
+        alert('Email sent!');
+        setComposeTo('');
+        setComposeSubject('');
+        setComposeBody('');
+        setShowCompose(false);
+        fetchEmailThreads();
+      } else {
+        const data = await res.json();
+        alert(`Failed to send: ${data.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Compose error:', error);
+      alert('Failed to send email');
+    } finally {
+      setSendingCompose(false);
+    }
+  };
+
   const sendEmails = async () => {
     setSending(true);
     try {
@@ -379,9 +428,18 @@ https://cal.com/apexvoicesolutions`;
             <h1 className="text-3xl font-bold text-gray-900">Agent E</h1>
             <p className="text-gray-500 mt-1">AI-powered cold email outreach</p>
           </div>
-          <div className="flex items-center gap-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-xl">
-            <Sparkles size={18} />
-            <span className="font-medium">Sarah</span>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowCompose(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 flex items-center gap-2"
+            >
+              <Send size={18} />
+              Compose
+            </button>
+            <div className="flex items-center gap-2 bg-purple-100 text-purple-700 px-4 py-2 rounded-xl">
+              <Sparkles size={18} />
+              <span className="font-medium">Sarah</span>
+            </div>
           </div>
         </div>
 
@@ -806,6 +864,111 @@ https://cal.com/apexvoicesolutions`;
           </div>
         )}
       </main>
+
+      {/* Compose Email Modal */}
+      {showCompose && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900">Compose Email</h2>
+              <button
+                onClick={() => setShowCompose(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Recipient */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  To:
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={composeTo}
+                    onChange={(e) => setComposeTo(e.target.value)}
+                    placeholder="email@example.com"
+                    className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <select
+                    onChange={(e) => setComposeTo(e.target.value)}
+                    className="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Or select lead...</option>
+                    {leads.filter(l => l.email).map(lead => (
+                      <option key={lead.id} value={lead.email}>
+                        {lead.business_name} ({lead.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              {/* Subject */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Subject:
+                </label>
+                <input
+                  type="text"
+                  value={composeSubject}
+                  onChange={(e) => setComposeSubject(e.target.value)}
+                  placeholder="Email subject"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              {/* Body */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Message:
+                </label>
+                <textarea
+                  value={composeBody}
+                  onChange={(e) => setComposeBody(e.target.value)}
+                  placeholder="Write your message..."
+                  rows={10}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-sans"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowCompose(false);
+                  setComposeTo('');
+                  setComposeSubject('');
+                  setComposeBody('');
+                }}
+                className="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={sendComposedEmail}
+                disabled={sendingCompose || !composeTo || !composeSubject || !composeBody}
+                className="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {sendingCompose ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send size={18} />
+                    Send Email
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
