@@ -107,6 +107,9 @@ export default function AgentEPage() {
   // Email threads state
   const [emailThreads, setEmailThreads] = useState<EmailThread[]>([]);
   const [threadsLoading, setThreadsLoading] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
 
   useEffect(() => {
     fetchLeads();
@@ -290,6 +293,38 @@ https://cal.com/apexvoicesolutions`;
     await navigator.clipboard.writeText(text);
     setCopiedId(email.lead_id);
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const sendReply = async (thread: EmailThread) => {
+    if (!replyText.trim()) return;
+    
+    setSendingReply(true);
+    try {
+      const res = await fetch(`${API_URL}/webhooks/agentmail/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: thread.from_email,
+          subject: `Re: ${thread.subject}`,
+          text: replyText,
+          replyToMessageId: thread.message_id,
+        }),
+      });
+      
+      if (res.ok) {
+        alert('Reply sent!');
+        setReplyText('');
+        setReplyingTo(null);
+        fetchEmailThreads();
+      } else {
+        alert('Failed to send reply');
+      }
+    } catch (error) {
+      console.error('Reply error:', error);
+      alert('Failed to send reply');
+    } finally {
+      setSendingReply(false);
+    }
   };
 
   const sendEmails = async () => {
@@ -710,6 +745,59 @@ https://cal.com/apexvoicesolutions`;
                       <p className="text-sm text-gray-600 mt-3 pl-13 line-clamp-2">
                         {thread.preview}
                       </p>
+                    )}
+                    
+                    {/* Reply button for inbound emails */}
+                    {thread.direction === 'inbound' && (
+                      <div className="mt-3 pl-13">
+                        {replyingTo === thread.id ? (
+                          <div className="space-y-3">
+                            <textarea
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              placeholder="Type your reply..."
+                              className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              rows={3}
+                            />
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => sendReply(thread)}
+                                disabled={sendingReply || !replyText.trim()}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                              >
+                                {sendingReply ? (
+                                  <>
+                                    <Loader2 size={16} className="animate-spin" />
+                                    Sending...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Send size={16} />
+                                    Send Reply
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setReplyingTo(null);
+                                  setReplyText('');
+                                }}
+                                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setReplyingTo(thread.id)}
+                            className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          >
+                            <Reply size={16} />
+                            Reply
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                 ))}
