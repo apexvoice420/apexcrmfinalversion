@@ -5,7 +5,7 @@ import Sidebar from '@/components/sidebar';
 import { 
   Mail, Send, Sparkles, Copy, Check, Loader2, RefreshCw,
   Users, Target, Clock, TrendingUp, AlertCircle, ChevronRight,
-  Edit3, Trash2, Eye
+  Edit3, Trash2, Eye, Inbox, MessageSquare, Reply
 } from 'lucide-react';
 import { API_URL } from '@/lib/config';
 
@@ -73,13 +73,26 @@ interface Campaign {
   created_at: string;
 }
 
+interface EmailThread {
+  id: number;
+  lead_id: number | null;
+  thread_id: string;
+  message_id: string;
+  direction: 'inbound' | 'outbound';
+  subject: string;
+  preview: string;
+  from_email: string;
+  to_email: string;
+  created_at: string;
+}
+
 export default function AgentEPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLeads, setSelectedLeads] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [sending, setSending] = useState(false);
-  const [activeTab, setActiveTab] = useState<'generate' | 'campaigns' | 'sent'>('generate');
+  const [activeTab, setActiveTab] = useState<'generate' | 'campaigns' | 'sent' | 'replies'>('generate');
   
   // Email generation state
   const [selectedTemplate, setSelectedTemplate] = useState('missed_calls');
@@ -90,9 +103,14 @@ export default function AgentEPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [showCampaignModal, setShowCampaignModal] = useState(false);
   const [campaignName, setCampaignName] = useState('');
+  
+  // Email threads state
+  const [emailThreads, setEmailThreads] = useState<EmailThread[]>([]);
+  const [threadsLoading, setThreadsLoading] = useState(false);
 
   useEffect(() => {
     fetchLeads();
+    fetchEmailThreads();
   }, []);
 
   const fetchLeads = async () => {
@@ -107,6 +125,21 @@ export default function AgentEPage() {
       console.error('Failed to fetch leads:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEmailThreads = async () => {
+    setThreadsLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/webhooks/agentmail/threads`);
+      if (res.ok) {
+        const data = await res.json();
+        setEmailThreads(data.threads || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch email threads:', error);
+    } finally {
+      setThreadsLoading(false);
     }
   };
 
@@ -371,6 +404,7 @@ https://cal.com/apexvoicesolutions`;
             { id: 'generate', label: 'Generate Emails', icon: Sparkles },
             { id: 'campaigns', label: 'Campaigns', icon: Target },
             { id: 'sent', label: 'Sent History', icon: Clock },
+            { id: 'replies', label: 'Replies', icon: Reply, badge: emailThreads.filter(t => t.direction === 'inbound').length },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -383,6 +417,11 @@ https://cal.com/apexvoicesolutions`;
             >
               <tab.icon size={18} />
               {tab.label}
+              {tab.badge && tab.badge > 0 && (
+                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {tab.badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -591,6 +630,91 @@ https://cal.com/apexvoicesolutions`;
               <p className="text-sm text-gray-500 mt-1">View all emails sent through Agent E</p>
               <p className="text-xs text-gray-400 mt-4">No emails sent yet. Generate and send some emails above!</p>
             </div>
+          </div>
+        )}
+
+        {/* Replies Tab */}
+        {activeTab === 'replies' && (
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="font-semibold text-gray-900">Email Replies</h2>
+                <p className="text-sm text-gray-500">Replies from your cold outreach campaigns</p>
+              </div>
+              <button
+                onClick={fetchEmailThreads}
+                disabled={threadsLoading}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 flex items-center gap-2"
+              >
+                <RefreshCw size={16} className={threadsLoading ? 'animate-spin' : ''} />
+                Refresh
+              </button>
+            </div>
+
+            {threadsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 size={24} className="animate-spin text-blue-600" />
+              </div>
+            ) : emailThreads.length === 0 ? (
+              <div className="text-center py-12">
+                <Inbox size={48} className="mx-auto text-gray-300 mb-4" />
+                <h3 className="font-semibold text-gray-900">No replies yet</h3>
+                <p className="text-sm text-gray-500 mt-1">When leads reply to your emails, they'll show up here</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {emailThreads.map((thread) => (
+                  <div 
+                    key={thread.id} 
+                    className={`border rounded-xl p-4 ${
+                      thread.direction === 'inbound' 
+                        ? 'border-blue-200 bg-blue-50' 
+                        : 'border-gray-200 bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          thread.direction === 'inbound' 
+                            ? 'bg-blue-100 text-blue-600' 
+                            : 'bg-gray-200 text-gray-600'
+                        }`}>
+                          {thread.direction === 'inbound' ? <Reply size={18} /> : <Send size={18} />}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-gray-900">
+                              {thread.direction === 'inbound' ? thread.from_email : thread.to_email}
+                            </p>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              thread.direction === 'inbound' 
+                                ? 'bg-blue-100 text-blue-700' 
+                                : 'bg-gray-200 text-gray-600'
+                            }`}>
+                              {thread.direction === 'inbound' ? 'Received' : 'Sent'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">{thread.subject}</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-400">
+                        {new Date(thread.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    {thread.preview && (
+                      <p className="text-sm text-gray-600 mt-3 pl-13 line-clamp-2">
+                        {thread.preview}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>
